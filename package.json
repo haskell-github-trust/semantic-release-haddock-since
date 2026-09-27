@@ -1,0 +1,31 @@
+{
+  "name": "semantic-release-haddock-since",
+  "version": "0.0.0-development",
+  "description": "semantic-release plugin that stamps Haddock @since annotations on newly exported Haskell declarations",
+  "license": "BSD-3-Clause",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/haskell-github-trust/semantic-release-haddock-since.git"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": "./dist/index.js",
+  "files": ["dist"],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "tsc --noEmit -p tsconfig.test.json && tsc -p tsconfig.test.json --noEmit false --outDir dist-test && node --test dist-test/test/*.test.js",
+    "prepack": "npm run build"
+  },
+  "peerDependencies": {
+    "semantic-release": ">=20"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "typescript": "^5.7.3"
+  },
+  "keywords": ["semantic-release", "haddock", "haskell", "since"]
+}
