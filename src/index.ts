@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process"
 import { constants } from "node:fs"
-import { access, readdir, readFile, writeFile } from "node:fs/promises"
-import { basename, delimiter, join } from "node:path"
+import { access, mkdir, readdir, readFile, writeFile } from "node:fs/promises"
+import { basename, delimiter, dirname, join } from "node:path"
 import { promisify } from "node:util"
 import { addSince, isLocalDeclaration, parseHoogle, toPvp } from "./haddock.js"
 
@@ -219,6 +219,7 @@ export async function prepare(pluginConfig: PluginConfig, context: PrepareContex
     }
   }
 
+  await mkdir(dirname(baselinePath), { recursive: true })
   await writeFile(baselinePath, `${keys.join("\n")}\n`)
 
   const [buildBin, ...buildArgs] = config.buildCommand
