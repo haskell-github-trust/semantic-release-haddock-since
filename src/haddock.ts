@@ -37,19 +37,22 @@ export function parseHoogle(input: string): string[] {
 export function addSince(source: string, name: string, version: string): string {
   const declaration = name.includes(" ")
     ? new RegExp(`^instance\\s+${escapeRegExp(name)}(?:\\s|$)`, "m")
-    : new RegExp(`^${escapeRegExp(name)}\\b`, "m")
+    : new RegExp(
+        `^(?:(?:data|type)(?:\\s+family)?\\s+|newtype\\s+|class\\s+(?:[^\\n=]*=>\\s*)?|pattern\\s+)?${escapeRegExp(name)}(?![A-Za-z0-9_'])`,
+        "m",
+      )
   if (new RegExp(`@since\\s+`).test(source)) {
     const match = declaration.exec(source)
     if (match) {
       const before = source.slice(0, match.index)
-      const block = before.match(/(?:^--.*\n)+$/)
+      const block = before.match(/(?:^--.*\n)+(?![\s\S])/m)
       if (block?.[0].includes("@since")) return source
     }
   }
   const match = declaration.exec(source)
   if (!match) throw new Error(`Cannot locate public declaration: ${name}`)
   const before = source.slice(0, match.index)
-  const block = before.match(/(?:^--.*\n)+$/)
+  const block = before.match(/(?:^--.*\n)+(?![\s\S])/m)
   if (block) {
     return source.slice(0, match.index) + `-- @since ${version}\n` + source.slice(match.index)
   }
@@ -61,7 +64,7 @@ export function isLocalDeclaration(source: string, name: string): boolean {
   if (name.includes(" "))
     return new RegExp(`^instance\\s+${escapeRegExp(name)}(?:\\s|$)`, "m").test(source)
   return new RegExp(
-    `^(?:data|newtype|type|class|pattern)\\b[^\\n]*\\b${escapeRegExp(name)}\\b|^${escapeRegExp(name)}\\b`,
+    `^(?:data|newtype|type|class|pattern)\\b[^\\n]*\\b${escapeRegExp(name)}(?![A-Za-z0-9_'])|^${escapeRegExp(name)}(?![A-Za-z0-9_'])`,
     "m",
   ).test(source)
 }
