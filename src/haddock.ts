@@ -54,7 +54,12 @@ export function addSince(source: string, name: string, version: string): string 
   const before = source.slice(0, match.index)
   const block = before.match(/(?:^--.*\n)+(?![\s\S])/m)
   if (block) {
-    return source.slice(0, match.index) + `-- @since ${version}\n` + source.slice(match.index)
+    const separator = /(?:^|\n)--[ \t]*\n$/.test(block[0]) ? "" : "--\n"
+    return (
+      source.slice(0, match.index) +
+      `${separator}-- @since ${version}\n` +
+      source.slice(match.index)
+    )
   }
 
   return source.slice(0, match.index) + `-- | @since ${version}\n` + source.slice(match.index)

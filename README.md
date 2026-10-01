@@ -65,8 +65,8 @@ The first release has no baseline, so every export is treated as new. If that is
 generate a baseline by hand before the first run.
 
 Existing `@since` annotations are never duplicated or overwritten. A declaration with a Haddock
-comment block gets the annotation appended to that block; one without gets a new `-- | @since`
-block.
+comment block gets the annotation appended to that block, separated by an empty `--` line since
+Haddock requires `@since` to be its own paragraph; one without gets a new `-- | @since` block.
 
 ## Development
 

@@ -28,7 +28,12 @@ class MonadLogger m where {
 
 test("addSince adds an annotation to an existing Haddock block", () => {
   const source = "-- | Runs the logger.\nrunLoggerWith :: LoggerIO -> a\n"
-  assert.equal(addSince(source, "runLoggerWith", "0.1.1"), "-- | Runs the logger.\n-- @since 0.1.1\nrunLoggerWith :: LoggerIO -> a\n")
+  assert.equal(addSince(source, "runLoggerWith", "0.1.1"), "-- | Runs the logger.\n--\n-- @since 0.1.1\nrunLoggerWith :: LoggerIO -> a\n")
+})
+
+test("addSince reuses a trailing blank comment line as paragraph separator", () => {
+  const source = "-- | Runs the logger.\n--\nrunLoggerWith :: LoggerIO -> a\n"
+  assert.equal(addSince(source, "runLoggerWith", "0.1.1"), "-- | Runs the logger.\n--\n-- @since 0.1.1\nrunLoggerWith :: LoggerIO -> a\n")
 })
 
 test("addSince creates a Haddock block when absent", () => {
@@ -83,7 +88,7 @@ test("addSince is idempotent", () => {
 test("addSince appends to an existing Haddock block below other code", () => {
   assert.equal(
     addSince("module M where\n\n-- | A cache.\ndata Cache k v :: Effect where\n", "Cache", "0.1.1"),
-    "module M where\n\n-- | A cache.\n-- @since 0.1.1\ndata Cache k v :: Effect where\n",
+    "module M where\n\n-- | A cache.\n--\n-- @since 0.1.1\ndata Cache k v :: Effect where\n",
   )
 })
 
