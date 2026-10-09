@@ -97,19 +97,21 @@ async function isOnPath(bin: string): Promise<boolean> {
 }
 
 async function resolveVersionFilePaths(root: string, patterns: string[]): Promise<string[]> {
-  const entries = await readdir(root)
   const results = new Set<string>()
   for (const pattern of patterns) {
-    if (!pattern.includes("*")) {
-      if (entries.includes(pattern)) results.add(join(root, pattern))
+    const dir = join(root, dirname(pattern))
+    const name = basename(pattern)
+    const entries = await readdir(dir).catch(() => [] as string[])
+    if (!name.includes("*")) {
+      if (entries.includes(name)) results.add(join(dir, name))
       continue
     }
-    const starIndex = pattern.indexOf("*")
-    const prefix = pattern.slice(0, starIndex)
-    const suffix = pattern.slice(starIndex + 1)
+    const starIndex = name.indexOf("*")
+    const prefix = name.slice(0, starIndex)
+    const suffix = name.slice(starIndex + 1)
     for (const entry of entries) {
       if (entry.startsWith(prefix) && entry.endsWith(suffix) && entry.length >= prefix.length + suffix.length) {
-        results.add(join(root, entry))
+        results.add(join(dir, entry))
       }
     }
   }
