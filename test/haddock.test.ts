@@ -23,7 +23,21 @@ class MonadLogger m where {
   monadLoggerLog :: m ()
 }
 `
-  assert.deepEqual(parseHoogle(hoogle), ["Effectful.Logger.LoggerIO", "Effectful.Logger.MonadLogger", "Effectful.Logger.MonadLogger (Eff es)", "Effectful.Logger.runLoggerWith"])
+  assert.deepEqual(
+    parseHoogle(hoogle).map((e) => e.key),
+    ["Effectful.Logger.LoggerIO", "Effectful.Logger.MonadLogger", "Effectful.Logger.MonadLogger (Eff es)", "Effectful.Logger.runLoggerWith"],
+  )
+})
+
+test("parseHoogle splits module from qualified instance heads and dotted operators", () => {
+  const hoogle = `module Data.Cache
+instance Show (Data.Map.Map k v)
+(.:) :: a -> b
+`
+  assert.deepEqual(parseHoogle(hoogle), [
+    { module: "Data.Cache", name: ".:", key: "Data.Cache..:", instance: false },
+    { module: "Data.Cache", name: "Show (Data.Map.Map k v)", key: "Data.Cache.Show (Data.Map.Map k v)", instance: true },
+  ])
 })
 
 test("addSince adds an annotation to an existing Haddock block", () => {
@@ -38,10 +52,6 @@ test("addSince reuses a trailing blank comment line as paragraph separator", () 
 
 test("addSince creates a Haddock block when absent", () => {
   assert.equal(addSince("runLoggerWith :: LoggerIO -> a\n", "runLoggerWith", "0.1.1"), "-- | @since 0.1.1\nrunLoggerWith :: LoggerIO -> a\n")
-})
-
-test("addSince locates instances", () => {
-  assert.equal(addSince("instance MonadLogger (Eff es)\n", "MonadLogger (Eff es)", "0.1.1"), "-- | @since 0.1.1\ninstance MonadLogger (Eff es)\n")
 })
 
 test("addSince locates GADT data declarations", () => {

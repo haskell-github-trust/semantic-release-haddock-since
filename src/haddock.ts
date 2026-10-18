@@ -1,7 +1,18 @@
-export function parseHoogle(input: string): string[] {
+export interface HoogleEntry {
+  module: string
+  name: string
+  key: string
+  instance: boolean
+}
+
+export function parseHoogle(input: string): HoogleEntry[] {
   let moduleName = ""
   let inClass = false
-  const names = new Set<string>()
+  const entries = new Map<string, HoogleEntry>()
+  const add = (name: string, instance = false) => {
+    const key = `${moduleName}.${name}`
+    entries.set(key, { module: moduleName, name, key, instance })
+  }
   for (const line of input.split(/\r?\n/)) {
     const moduleMatch = line.match(/^module\s+([A-Za-z0-9_.']+)/)
     if (moduleMatch) {
@@ -18,29 +29,27 @@ export function parseHoogle(input: string): string[] {
     const classDeclaration = line.match(/^class\s+(.+?)\s+where\s*\{/)
     if (classDeclaration) {
       const name = classDeclaration[1].match(/(?:^|\s)([A-Z][A-Za-z0-9_']*)/)
-      if (name) names.add(`${moduleName}.${name[1]}`)
+      if (name) add(name[1])
       inClass = true
     } else if (instance) {
-      names.add(`${moduleName}.${instance[1].replace(/\s+where.*$/, "").trim()}`)
+      add(instance[1].replace(/\s+where.*$/, "").trim(), true)
     } else if (declaration && !line.startsWith("[")) {
-      names.add(`${moduleName}.${declaration[1].replace(/^\((.*)\)$/, "$1")}`)
+      add(declaration[1].replace(/^\((.*)\)$/, "$1"))
     } else {
       const typeDeclaration = line.match(
         /^(?:data|newtype|type|pattern)\s+(?:family\s+)?([A-Z][A-Za-z0-9_']*)/,
       )
-      if (typeDeclaration) names.add(`${moduleName}.${typeDeclaration[1]}`)
+      if (typeDeclaration) add(typeDeclaration[1])
     }
   }
-  return [...names].sort()
+  return [...entries.values()].sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0))
 }
 
 export function addSince(source: string, name: string, version: string): string {
-  const declaration = name.includes(" ")
-    ? new RegExp(`^instance\\s+${escapeRegExp(name)}(?:\\s|$)`, "m")
-    : new RegExp(
-        `^(?:(?:data|type)(?:\\s+family)?\\s+|newtype\\s+|class\\s+(?:[^\\n=]*=>\\s*)?|pattern\\s+)?${escapeRegExp(name)}(?![A-Za-z0-9_'])`,
-        "m",
-      )
+  const declaration = new RegExp(
+    `^(?:(?:data|type)(?:\\s+family)?\\s+|newtype\\s+|class\\s+(?:[^\\n=]*=>\\s*)?|pattern\\s+)?${escapeRegExp(name)}(?![A-Za-z0-9_'])`,
+    "m",
+  )
   if (new RegExp(`@since\\s+`).test(source)) {
     const match = declaration.exec(source)
     if (match) {
@@ -66,8 +75,6 @@ export function addSince(source: string, name: string, version: string): string 
 }
 
 export function isLocalDeclaration(source: string, name: string): boolean {
-  if (name.includes(" "))
-    return new RegExp(`^instance\\s+${escapeRegExp(name)}(?:\\s|$)`, "m").test(source)
   return new RegExp(
     `^(?:data|newtype|type|class|pattern)\\b[^\\n]*\\b${escapeRegExp(name)}(?![A-Za-z0-9_'])|^${escapeRegExp(name)}(?![A-Za-z0-9_'])`,
     "m",

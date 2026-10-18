@@ -204,15 +204,13 @@ export async function prepare(pluginConfig: PluginConfig, context: PrepareContex
   if (haddockResult.stderr) context.logger.log(haddockResult.stderr)
 
   const hoogleFile = await findHoogleFile(join(root, config.haddockOutputDir))
-  const keys = parseHoogle(await readFile(hoogleFile, "utf8"))
+  const entries = parseHoogle(await readFile(hoogleFile, "utf8"))
 
   const baselinePath = await resolveBaselinePath(root, config)
   const baseline = await readBaseline(baselinePath)
 
-  for (const key of keys.filter((key) => !baseline.has(key))) {
-    const [, name] = key.match(/\.([^.]*)$/) ?? []
-    if (!name) continue
-    const file = join(root, config.srcDir, `${key.slice(0, key.lastIndexOf(".")).replaceAll(".", "/")}.hs`)
+  for (const { module, name, key } of entries.filter((e) => !e.instance && !baseline.has(e.key))) {
+    const file = join(root, config.srcDir, `${module.replaceAll(".", "/")}.hs`)
     if (!(await pathExists(file))) throw new Error(`Cannot locate module source for ${key}`)
     const source = await readFile(file, "utf8")
     if (isLocalDeclaration(source, name)) {
@@ -222,7 +220,7 @@ export async function prepare(pluginConfig: PluginConfig, context: PrepareContex
   }
 
   await mkdir(dirname(baselinePath), { recursive: true })
-  await writeFile(baselinePath, `${keys.join("\n")}\n`)
+  await writeFile(baselinePath, `${entries.map((e) => e.key).join("\n")}\n`)
 
   const [buildBin, ...buildArgs] = config.buildCommand
   const buildResult = await execFileAsync(buildBin!, buildArgs, { cwd: root, maxBuffer: 10 * 1024 * 1024 })
