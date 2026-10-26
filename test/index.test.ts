@@ -19,6 +19,29 @@ test("prepare creates the missing api directory for the baseline", async () => {
   assert.equal(await readFile(join(root, "api/foo.api"), "utf8"), "\n")
 })
 
+test("prepare skips instances with qualified heads", async () => {
+  const root = await mkdtemp(join(tmpdir(), "haddock-since-"))
+  const key =
+    "Effectful.Cache.Memcache.GHC.Internal.Exception.Type.Exception Effectful.Cache.Memcache.MemcacheUnsupported"
+  const source = "module Effectful.Cache.Memcache where\n\ninstance Exception MemcacheUnsupported\n"
+  await writeFile(join(root, "foo.cabal"), "name: foo\nversion: 0.0.0\n")
+  await mkdir(join(root, "src/Effectful/Cache"), { recursive: true })
+  await writeFile(join(root, "src/Effectful/Cache/Memcache.hs"), source)
+  await mkdir(join(root, ".stack-work/doc/html/foo"), { recursive: true })
+  await writeFile(
+    join(root, ".stack-work/doc/html/foo/foo.txt"),
+    "@package foo 0.0.0\nmodule Effectful.Cache.Memcache\ninstance GHC.Internal.Exception.Type.Exception Effectful.Cache.Memcache.MemcacheUnsupported\n",
+  )
+
+  await prepare(
+    { haddockCommand: ["true"], buildCommand: ["true"] },
+    { cwd: root, logger: { log() {} }, nextRelease: { version: "1.0.0" } },
+  )
+
+  assert.equal(await readFile(join(root, "src/Effectful/Cache/Memcache.hs"), "utf8"), source)
+  assert.equal(await readFile(join(root, "api/foo.api"), "utf8"), `${key}\n`)
+})
+
 test("prepare updates version files in subdirectories and at the root", async () => {
   const root = await mkdtemp(join(tmpdir(), "haddock-since-"))
   await writeFile(join(root, "foo.cabal"), "name: foo\nversion: 0.0.0\n")
