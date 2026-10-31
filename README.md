@@ -13,8 +13,11 @@ release.
 ## Install
 
 ```bash
-npm install --save-dev semantic-release-haddock-since
+npm install --save-dev https://github.com/haskell-github-trust/semantic-release-haddock-since/releases/download/1.0.0/semantic-release-haddock-since-1.0.0.tgz
 ```
+
+Replace `1.0.0` with the wanted [release](https://github.com/haskell-github-trust/semantic-release-haddock-since/releases).
+The tarball ships the compiled `dist/`, unlike installing from the repository URL.
 
 ## Usage
 
@@ -31,6 +34,38 @@ npm install --save-dev semantic-release-haddock-since
 
 Place it before `@semantic-release/git` so the version bump, the refreshed baseline and the new
 `@since` comments are all committed as part of the release.
+
+### Caching builds in CI
+
+Haddock needs the package and all its dependencies compiled, so a release on a fresh runner
+rebuilds everything. Restore the build tool's directories with your CI cache **before**
+semantic-release runs, in the same job. GitHub Actions example for Stack:
+
+```yaml
+- uses: actions/cache@v4
+  with:
+    path: |
+      ~/.stack
+      .stack-work
+    key: stack-${{ runner.os }}-${{ hashFiles('stack.yaml', 'stack.yaml.lock', 'package.yaml', '*.cabal') }}
+    restore-keys: stack-${{ runner.os }}-
+- run: npx semantic-release
+```
+
+For Cabal, cache the store and the project build directory instead:
+
+```yaml
+    path: |
+      ~/.cabal/store
+      ~/.local/state/cabal/store
+      dist-newstyle
+    key: cabal-${{ runner.os }}-${{ hashFiles('cabal.project*', '*.cabal') }}
+    restore-keys: cabal-${{ runner.os }}-
+```
+
+Share the key with your regular build/test workflow so the release job reuses its cache. If
+`STACK_ROOT` or `CABAL_DIR` is set, cache that path instead of the defaults. GitLab CI and others
+work the same way with their `cache:` directive.
 
 ## Options
 
