@@ -29,7 +29,7 @@
     "@types/node": "^24.0.0",
     "conventional-changelog-conventionalcommits": "^8.0.0",
     "semantic-release": "^24.2.0",
-    "typescript": "^5.7.3"
+    "typescript": "^7.0.0"
   },
   "peerDependencies": {
     "semantic-release": ">=20"
