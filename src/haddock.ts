@@ -47,36 +47,27 @@ export function parseHoogle(input: string): HoogleEntry[] {
 
 export function addSince(source: string, name: string, version: string): string {
   const declaration = new RegExp(
-    `^(?:(?:data|type)(?:\\s+family)?\\s+|newtype\\s+|class\\s+(?:[^\\n=]*=>\\s*)?|pattern\\s+)?${escapeRegExp(name)}(?![A-Za-z0-9_'])`,
+    `^(?:(?:data|type)(?:\\s+family)?\\s+|newtype\\s+|class\\s+(?:[^\\n=]*=>\\s*)?|pattern\\s+)?${escapeRegExp(name)}(?![A-Za-z0-9_'])` +
+      `|^[ \\t]+(?:data|type)(?:\\s+family)?\\s+${escapeRegExp(name)}(?![A-Za-z0-9_'])`,
     "m",
   )
-  if (new RegExp(`@since\\s+`).test(source)) {
-    const match = declaration.exec(source)
-    if (match) {
-      const before = source.slice(0, match.index)
-      const block = before.match(/(?:^--.*\n)+(?![\s\S])/m)
-      if (block?.[0].includes("@since")) return source
-    }
-  }
   const match = declaration.exec(source)
   if (!match) throw new Error(`Cannot locate public declaration: ${name}`)
+  const indent = match[0].match(/^[ \t]*/)![0]
   const before = source.slice(0, match.index)
-  const block = before.match(/(?:^--.*\n)+(?![\s\S])/m)
+  const block = before.match(/(?:^[ \t]*--.*\n)+(?![\s\S])/m)
+  if (block?.[0].includes("@since")) return source
   if (block) {
-    const separator = /(?:^|\n)--[ \t]*\n$/.test(block[0]) ? "" : "--\n"
-    return (
-      source.slice(0, match.index) +
-      `${separator}-- @since ${version}\n` +
-      source.slice(match.index)
-    )
+    const separator = /(?:^|\n)[ \t]*--[ \t]*\n$/.test(block[0]) ? "" : `${indent}--\n`
+    return before + `${separator}${indent}-- @since ${version}\n` + source.slice(match.index)
   }
 
-  return source.slice(0, match.index) + `-- | @since ${version}\n` + source.slice(match.index)
+  return before + `${indent}-- | @since ${version}\n` + source.slice(match.index)
 }
 
 export function isLocalDeclaration(source: string, name: string): boolean {
   return new RegExp(
-    `^(?:data|newtype|type|class|pattern)\\b[^\\n]*\\b${escapeRegExp(name)}(?![A-Za-z0-9_'])|^${escapeRegExp(name)}(?![A-Za-z0-9_'])`,
+    `^(?:data|newtype|type|class|pattern)\\b[^\\n]*\\b${escapeRegExp(name)}(?![A-Za-z0-9_'])|^${escapeRegExp(name)}(?![A-Za-z0-9_'])|^[ \\t]+(?:data|type)\\b[^\\n]*\\b${escapeRegExp(name)}(?![A-Za-z0-9_'])`,
     "m",
   ).test(source)
 }

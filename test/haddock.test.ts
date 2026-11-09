@@ -90,6 +90,17 @@ test("addSince ignores type instances", () => {
   )
 })
 
+test("addSince locates associated types within classes", () => {
+  const source = "class C a where\n  -- | Assoc.\n  type Assoc a\n  type family Fam a\n"
+  const once = addSince(addSince(source, "Assoc", "0.1.1"), "Fam", "0.1.1")
+  assert.equal(
+    once,
+    "class C a where\n  -- | Assoc.\n  --\n  -- @since 0.1.1\n  type Assoc a\n  -- | @since 0.1.1\n  type family Fam a\n",
+  )
+  assert.equal(addSince(once, "Assoc", "0.1.2"), once)
+  assert.ok(isLocalDeclaration(source, "Assoc"))
+})
+
 test("addSince is idempotent", () => {
   const once = addSince("module M where\n\ndata Cache k v :: Effect where\n", "Cache", "0.1.1")
   assert.equal(addSince(once, "Cache", "0.1.2"), once)
